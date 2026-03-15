@@ -1,0 +1,5 @@
+# Add these lines to a file named .gitignore in your project root
+research_catalogue.db
+*.json
+arxiv-metadata-oai-snapshot.json
+data/
