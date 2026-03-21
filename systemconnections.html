@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NEXUS — How Everything Connects</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#060c18;color:#c8daf0;min-height:100vh;padding:2rem 1.5rem;}
+.wrap{max-width:1080px;margin:0 auto;}
+
+.header{text-align:center;margin-bottom:2.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(82,160,255,.1);}
+.header h1{font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:.3rem;}
+.header h1 span{color:#00e0bc;}
+.header p{font-size:.8rem;color:#3d5a78;}
+
+/* ── Main connection diagram ── */
+.diagram{position:relative;width:100%;margin-bottom:2.5rem;}
+
+/* file nodes */
+.node{
+  position:absolute;border-radius:10px;border:1px solid;
+  padding:.7rem 1rem;text-align:center;cursor:default;
+  transition:transform .18s;
+}
+.node:hover{transform:scale(1.03);}
+.node .n-name{font-size:.82rem;font-weight:700;margin-bottom:2px;}
+.node .n-type{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;opacity:.65;}
+
+/* ── Flow table ── */
+.flow-table{width:100%;border-collapse:collapse;margin-bottom:2rem;font-size:.74rem;}
+.flow-table th{padding:.55rem .9rem;text-align:left;font-size:.6rem;letter-spacing:.14em;
+  text-transform:uppercase;color:#1e3050;border-bottom:1px solid rgba(82,160,255,.1);
+  background:rgba(82,160,255,.04);}
+.flow-table td{padding:.6rem .9rem;border-bottom:1px solid rgba(82,160,255,.06);
+  color:#5a7898;vertical-align:top;line-height:1.55;}
+.flow-table td:first-child{color:#4d9eff;font-weight:600;white-space:nowrap;}
+.flow-table td:nth-child(2){color:#9d7cf4;font-family:ui-monospace,monospace;font-size:.7rem;white-space:nowrap;}
+.flow-table td:nth-child(3){color:#00e0bc;font-family:ui-monospace,monospace;font-size:.7rem;white-space:nowrap;}
+.flow-table tr:hover td{background:rgba(82,160,255,.03);}
+.flow-table .group-row td{
+  background:rgba(82,160,255,.05);color:#2e4060;font-size:.6rem;
+  letter-spacing:.1em;text-transform:uppercase;padding:.3rem .9rem;
+  border-bottom:1px solid rgba(82,160,255,.08);
+}
+
+/* ── Connection cards ── */
+.conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:2rem;}
+@media(max-width:640px){.conn-grid{grid-template-columns:1fr;}}
+.conn-card{border-radius:12px;border:1px solid;padding:1.1rem 1.3rem;}
+.conn-card.blue{background:rgba(77,158,255,.05);border-color:rgba(77,158,255,.18);}
+.conn-card.cyan{background:rgba(0,224,188,.05);border-color:rgba(0,224,188,.18);}
+.conn-card.purple{background:rgba(157,124,244,.05);border-color:rgba(157,124,244,.18);}
+.conn-card.gold{background:rgba(240,192,64,.05);border-color:rgba(240,192,64,.18);}
+.conn-card.coral{background:rgba(255,96,128,.05);border-color:rgba(255,96,128,.18);}
+.conn-card.green{background:rgba(100,200,100,.05);border-color:rgba(100,200,100,.18);}
+
+.conn-title{font-size:.78rem;font-weight:700;margin-bottom:.6rem;display:flex;align-items:center;gap:8px;}
+.conn-from{padding:2px 9px;border-radius:8px;font-size:.65rem;font-weight:600;}
+.conn-arrow{color:#1e3050;font-size:.9rem;}
+.conn-to{padding:2px 9px;border-radius:8px;font-size:.65rem;font-weight:600;}
+.conn-body{font-size:.72rem;color:#3d5a78;line-height:1.65;}
+.conn-body code{font-family:ui-monospace,monospace;font-size:.68rem;
+  background:rgba(82,160,255,.1);padding:1px 5px;border-radius:3px;color:#88b8f0;}
+.conn-body ul{margin:.4rem 0 0 .8rem;}
+.conn-body li{margin-bottom:2px;}
+
+/* ── SVG diagram ── */
+.svg-wrap{background:rgba(82,160,255,.03);border:1px solid rgba(82,160,255,.1);
+  border-radius:14px;padding:1.5rem;margin-bottom:2rem;overflow-x:auto;}
+.svg-wrap svg{display:block;margin:0 auto;}
+
+/* section label */
+.slabel{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:#1e3050;
+  margin-bottom:.8rem;margin-top:1.8rem;}
+
+/* data flow steps */
+.steps{display:flex;flex-direction:column;gap:0;margin-bottom:2rem;}
+.step{display:flex;gap:14px;align-items:flex-start;padding:.9rem 0;
+  border-bottom:1px solid rgba(82,160,255,.06);}
+.step:last-child{border-bottom:none;}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+.step-body{flex:1;}
+.step-title{font-size:.8rem;font-weight:600;margin-bottom:3px;}
+.step-desc{font-size:.72rem;color:#3d5a78;line-height:1.6;}
+.step-desc code{font-family:ui-monospace,monospace;font-size:.68rem;
+  background:rgba(82,160,255,.08);padding:1px 5px;border-radius:3px;color:#88b8f0;}
+.step-files{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.file-tag{font-size:.62rem;padding:2px 8px;border-radius:8px;font-family:ui-monospace,monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <h1>NEXUS — How <span>Everything Connects</span></h1>
+  <p>Every file, every API call, every data flow — explained</p>
+</div>
+
+<!-- ══ VISUAL DIAGRAM ══ -->
+<div class="slabel">System architecture diagram</div>
+<div class="svg-wrap">
+<svg width="980" height="480" viewBox="0 0 980 480" xmlns="http://www.w3.org/2000/svg" style="font-family:system-ui,sans-serif;">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- LAYER LABELS -->
+  <text x="60" y="22" fill="#1e3050" font-size="10" letter-spacing="2" text-anchor="middle">DATA</text>
+  <text x="240" y="22" fill="#1e3050" font-size="10" letter-spacing="2" text-anchor="middle">CLEANING</text>
+  <text x="460" y="22" fill="#1e3050" font-size="10" letter-spacing="2" text-anchor="middle">DATABASE</text>
+  <text x="680" y="22" fill="#1e3050" font-size="10" letter-spacing="2" text-anchor="middle">BACKEND</text>
+  <text x="880" y="22" fill="#1e3050" font-size="10" letter-spacing="2" text-anchor="middle">FRONTEND</text>
+
+  <!-- ── Raw JSON ── -->
+  <rect x="20" y="40" width="80" height="50" rx="8" fill="rgba(77,158,255,.08)" stroke="rgba(77,158,255,.3)" stroke-width="1"/>
+  <text x="60" y="61" fill="#4d9eff" font-size="10" font-weight="600" text-anchor="middle">arXiv</text>
+  <text x="60" y="75" fill="#3d5a78" font-size="9" text-anchor="middle">JSON 5GB</text>
+  <text x="60" y="87" fill="#3d5a78" font-size="9" text-anchor="middle">1.49M rows</text>
+
+  <!-- ── research_ingestion.py ── -->
+  <rect x="160" y="30" width="160" height="70" rx="8" fill="rgba(240,192,64,.08)" stroke="rgba(240,192,64,.3)" stroke-width="1"/>
+  <text x="240" y="52" fill="#f0c040" font-size="10" font-weight="600" text-anchor="middle">research_ingestion.py</text>
+  <text x="240" y="66" fill="#3d5a78" font-size="9" text-anchor="middle">10-layer cleaning</text>
+  <text x="240" y="78" fill="#3d5a78" font-size="9" text-anchor="middle">null clean · authors · DOI</text>
+  <text x="240" y="90" fill="#3d5a78" font-size="9" text-anchor="middle">dedup · validate</text>
+
+  <!-- JSON → ingestion -->
+  <line x1="100" y1="65" x2="160" y2="65" stroke="#4d9eff" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- ── SQLite DB ── -->
+  <rect x="380" y="30" width="160" height="130" rx="8" fill="rgba(0,224,188,.06)" stroke="rgba(0,224,188,.25)" stroke-width="1"/>
+  <text x="460" y="52" fill="#00e0bc" font-size="10" font-weight="600" text-anchor="middle">research_catalogue.db</text>
+  <text x="460" y="67" fill="#3d5a78" font-size="9" text-anchor="middle">publications (2.5M rows)</text>
+  <line x1="400" y1="74" x2="520" y2="74" stroke="rgba(0,224,188,.15)" stroke-width="0.5"/>
+  <text x="460" y="86" fill="#2e4060" font-size="9" text-anchor="middle">publications_fts (FTS5)</text>
+  <line x1="400" y1="93" x2="520" y2="93" stroke="rgba(0,224,188,.15)" stroke-width="0.5"/>
+  <text x="460" y="105" fill="#2e4060" font-size="9" text-anchor="middle">summary_by_year</text>
+  <text x="460" y="118" fill="#2e4060" font-size="9" text-anchor="middle">summary_by_category</text>
+  <text x="460" y="131" fill="#2e4060" font-size="9" text-anchor="middle">summary_year_cat</text>
+  <text x="460" y="144" fill="#2e4060" font-size="9" text-anchor="middle">orcid_cache</text>
+
+  <!-- ingestion → DB -->
+  <line x1="320" y1="65" x2="380" y2="65" stroke="#f0c040" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="350" y="58" fill="#3d5a78" font-size="8" text-anchor="middle">writes</text>
+
+  <!-- ── add_fts.py ── -->
+  <rect x="160" y="120" width="100" height="44" rx="8" fill="rgba(0,224,188,.06)" stroke="rgba(0,224,188,.2)" stroke-width="1"/>
+  <text x="210" y="138" fill="#00e0bc" font-size="9" font-weight="600" text-anchor="middle">add_fts.py</text>
+  <text x="210" y="152" fill="#3d5a78" font-size="8" text-anchor="middle">FTS5 index</text>
+
+  <!-- add_fts → DB -->
+  <path d="M 260 142 Q 330 142 380 110" fill="none" stroke="#00e0bc" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3 2"/>
+
+  <!-- ── build_summary.py ── -->
+  <rect x="160" y="175" width="100" height="44" rx="8" fill="rgba(157,124,244,.06)" stroke="rgba(157,124,244,.2)" stroke-width="1"/>
+  <text x="210" y="193" fill="#9d7cf4" font-size="9" font-weight="600" text-anchor="middle">build_summary.py</text>
+  <text x="210" y="207" fill="#3d5a78" font-size="8" text-anchor="middle">analytics cache</text>
+
+  <!-- build_summary → DB -->
+  <path d="M 260 197 Q 340 197 380 150" fill="none" stroke="#9d7cf4" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3 2"/>
+
+  <!-- ── build_orcid_cache.py ── -->
+  <rect x="160" y="230" width="100" height="44" rx="8" fill="rgba(255,96,128,.06)" stroke="rgba(255,96,128,.2)" stroke-width="1"/>
+  <text x="210" y="248" fill="#ff6080" font-size="9" font-weight="600" text-anchor="middle">build_orcid_cache.py</text>
+  <text x="210" y="262" fill="#3d5a78" font-size="8" text-anchor="middle">ORCID lookup cache</text>
+
+  <!-- orcid → DB -->
+  <path d="M 260 252 Q 350 252 380 160" fill="none" stroke="#ff6080" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3 2"/>
+
+  <!-- ── server.py ── -->
+  <rect x="590" y="30" width="180" height="310" rx="8" fill="rgba(157,124,244,.06)" stroke="rgba(157,124,244,.25)" stroke-width="1"/>
+  <text x="680" y="52" fill="#9d7cf4" font-size="10" font-weight="600" text-anchor="middle">server.py (FastAPI)</text>
+  <line x1="600" y1="58" x2="760" y2="58" stroke="rgba(157,124,244,.15)" stroke-width="0.5"/>
+  <text x="680" y="72" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/search (FTS5)</text>
+  <text x="680" y="86" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/analytics (summary)</text>
+  <text x="680" y="100" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/category_counts</text>
+  <text x="680" y="114" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/author_match (FTS)</text>
+  <text x="680" y="128" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/researcher (FTS)</text>
+  <text x="680" y="142" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/network (FTS)</text>
+  <text x="680" y="156" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/authors (FTS)</text>
+  <text x="680" y="170" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/orcid_lookup (cache)</text>
+  <text x="680" y="184" fill="#3d5a78" font-size="9" text-anchor="middle">GET /api/info (memory cache)</text>
+  <line x1="600" y1="192" x2="760" y2="192" stroke="rgba(157,124,244,.15)" stroke-width="0.5"/>
+  <text x="680" y="206" fill="#3d5a78" font-size="9" text-anchor="middle">GET /   → serves index.html</text>
+  <text x="680" y="220" fill="#3d5a78" font-size="9" text-anchor="middle">GET /app.js → serves app.js</text>
+  <line x1="600" y1="228" x2="760" y2="228" stroke="rgba(157,124,244,.15)" stroke-width="0.5"/>
+  <text x="680" y="244" fill="#2e4060" font-size="8.5" text-anchor="middle">Memory cache: info, analytics</text>
+  <text x="680" y="258" fill="#2e4060" font-size="8.5" text-anchor="middle">FTS5 → phrase search</text>
+  <text x="680" y="272" fill="#2e4060" font-size="8.5" text-anchor="middle">LIKE fallback if no FTS</text>
+  <text x="680" y="286" fill="#2e4060" font-size="8.5" text-anchor="middle">WAL mode · indexed SQLite</text>
+  <text x="680" y="300" fill="#2e4060" font-size="8.5" text-anchor="middle">no-cache headers on JS/HTML</text>
+  <text x="680" y="328" fill="#1e3050" font-size="8" text-anchor="middle">uvicorn server:app --port 8000</text>
+
+  <!-- DB ↔ server (bidirectional) -->
+  <line x1="540" y1="95" x2="590" y2="95" stroke="#00e0bc" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="565" y="88" fill="#3d5a78" font-size="8" text-anchor="middle">SQL queries</text>
+  <line x1="590" y1="108" x2="540" y2="108" stroke="#9d7cf4" stroke-width="1" marker-end="url(#arr)"/>
+  <text x="565" y="120" fill="#3d5a78" font-size="8" text-anchor="middle">rows back</text>
+
+  <!-- ── index.html ── -->
+  <rect x="810" y="30" width="150" height="50" rx="8" fill="rgba(77,158,255,.07)" stroke="rgba(77,158,255,.22)" stroke-width="1"/>
+  <text x="885" y="51" fill="#4d9eff" font-size="10" font-weight="600" text-anchor="middle">index.html</text>
+  <text x="885" y="65" fill="#3d5a78" font-size="9" text-anchor="middle">CSS · layout · empty panels</text>
+
+  <!-- ── app.js ── -->
+  <rect x="810" y="100" width="150" height="130" rx="8" fill="rgba(100,200,100,.06)" stroke="rgba(100,200,100,.22)" stroke-width="1"/>
+  <text x="885" y="120" fill="#64c864" font-size="10" font-weight="600" text-anchor="middle">app.js</text>
+  <line x1="820" y1="127" x2="950" y2="127" stroke="rgba(100,200,100,.15)" stroke-width="0.5"/>
+  <text x="885" y="140" fill="#3d5a78" font-size="9" text-anchor="middle">doSearch() · buildTable()</text>
+  <text x="885" y="154" fill="#3d5a78" font-size="9" text-anchor="middle">loadResearcherProfile()</text>
+  <text x="885" y="168" fill="#3d5a78" font-size="9" text-anchor="middle">showNetworkPage() D3</text>
+  <text x="885" y="182" fill="#3d5a78" font-size="9" text-anchor="middle">buildPagination()</text>
+  <text x="885" y="196" fill="#3d5a78" font-size="9" text-anchor="middle">showWelcome() · analytics</text>
+  <text x="885" y="210" fill="#3d5a78" font-size="9" text-anchor="middle">getFilters() · applyYear()</text>
+  <text x="885" y="224" fill="#2e4060" font-size="8.5" text-anchor="middle">fetch('/api/...') calls</text>
+
+  <!-- server → index.html -->
+  <line x1="770" y1="55" x2="810" y2="55" stroke="#9d7cf4" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="790" y="48" fill="#3d5a78" font-size="8" text-anchor="middle">GET /</text>
+
+  <!-- server → app.js -->
+  <line x1="770" y1="160" x2="810" y2="160" stroke="#9d7cf4" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="790" y="153" fill="#3d5a78" font-size="8" text-anchor="middle">GET /app.js</text>
+
+  <!-- app.js → server (API calls) -->
+  <path d="M 810 190 Q 790 340 770 260" fill="none" stroke="#64c864" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3 2"/>
+  <text x="795" y="290" fill="#3d5a78" font-size="8" text-anchor="middle">fetch()</text>
+  <text x="795" y="302" fill="#3d5a78" font-size="8" text-anchor="middle">API calls</text>
+
+  <!-- ORCID external -->
+  <rect x="380" y="340" width="120" height="44" rx="8" fill="rgba(255,96,128,.05)" stroke="rgba(255,96,128,.2)" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="440" y="358" fill="#ff6080" font-size="9" font-weight="600" text-anchor="middle">ORCID API</text>
+  <text x="440" y="372" fill="#3d5a78" font-size="8" text-anchor="middle">pub.orcid.org (internet)</text>
+
+  <!-- server ↔ ORCID -->
+  <path d="M 680 340 Q 680 370 500 370" fill="none" stroke="#ff6080" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3 2"/>
+  <text x="600" y="365" fill="#3d5a78" font-size="8" text-anchor="middle">fallback only</text>
+
+  <!-- Browser box -->
+  <rect x="810" y="260" width="150" height="60" rx="8" fill="rgba(82,160,255,.05)" stroke="rgba(82,160,255,.15)" stroke-width="1"/>
+  <text x="885" y="283" fill="#4d9eff" font-size="10" font-weight="600" text-anchor="middle">Browser</text>
+  <text x="885" y="297" fill="#3d5a78" font-size="9" text-anchor="middle">renders index.html</text>
+  <text x="885" y="310" fill="#3d5a78" font-size="9" text-anchor="middle">runs app.js</text>
+
+  <!-- Legend -->
+  <text x="20" y="440" fill="#1e3050" font-size="9">Legend:</text>
+  <line x1="70" y1="438" x2="100" y2="438" stroke="#4d9eff" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="105" y="441" fill="#3d5a78" font-size="9">data flow</text>
+  <line x1="170" y1="438" x2="200" y2="438" stroke="#64c864" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr)"/>
+  <text x="205" y="441" fill="#3d5a78" font-size="9">API call (browser→server)</text>
+  <line x1="360" y1="438" x2="390" y2="438" stroke="#ff6080" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr)"/>
+  <text x="395" y="441" fill="#3d5a78" font-size="9">external internet call</text>
+  <line x1="520" y1="438" x2="550" y2="438" stroke="#9d7cf4" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr)"/>
+  <text x="555" y="441" fill="#3d5a78" font-size="9">one-time setup script</text>
+</svg>
+</div>
+
+<!-- ══ DATA FLOW STEPS ══ -->
+<div class="slabel">Step-by-step data flow — what happens when you search</div>
+<div class="steps">
+  <div class="step">
+    <div class="step-num" style="background:rgba(77,158,255,.15);color:#4d9eff;">1</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#4d9eff;">You type "surjeet singh" and press Enter</div>
+      <div class="step-desc">The browser is displaying <code>index.html</code>. The search box has <code>onkeydown</code> wired to <code>doSearch()</code> in <code>app.js</code>.</div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(77,158,255,.1);color:#4d9eff;">index.html</span>
+        <span class="file-tag" style="background:rgba(100,200,100,.1);color:#64c864;">app.js → doSearch()</span>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="background:rgba(100,200,100,.15);color:#64c864;">2</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#64c864;">app.js builds the API request</div>
+      <div class="step-desc"><code>getFilters()</code> reads year range, sort order, page size from the sidebar. <code>doSearch()</code> assembles <code>fetch('/api/search?q=surjeet+singh&year_from=2007&year_to=2026&limit=50&page=1')</code></div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(100,200,100,.1);color:#64c864;">app.js → getFilters() + fetch()</span>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="background:rgba(157,124,244,.15);color:#9d7cf4;">3</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#9d7cf4;">server.py receives the request</div>
+      <div class="step-desc">FastAPI routes it to the <code>search()</code> function. <code>has_fts()</code> checks if <code>publications_fts</code> table exists — it does. <code>build_fts_query("surjeet singh")</code> returns <code>"surjeet singh"</code> (phrase search, not OR).</div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(157,124,244,.1);color:#9d7cf4;">server.py → search() → build_fts_query()</span>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="background:rgba(0,224,188,.15);color:#00e0bc;">4</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#00e0bc;">SQLite runs the FTS5 query</div>
+      <div class="step-desc"><code>SELECT p.* FROM publications_fts f JOIN publications p ON p.rowid=f.rowid WHERE publications_fts MATCH '"surjeet singh"' AND p.year BETWEEN 2007 AND 2026 LIMIT 50 OFFSET 0</code>. The FTS5 inverted index jumps directly to ~40 matching rows. Takes ~4ms instead of 3500ms.</div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(0,224,188,.1);color:#00e0bc;">research_catalogue.db → publications_fts</span>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="background:rgba(157,124,244,.15);color:#9d7cf4;">5</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#9d7cf4;">server.py returns JSON</div>
+      <div class="step-desc">Returns <code>{"results":[...], "total_count":41, "page":1, "total_pages":1, "elapsed_ms":4.2}</code> back to the browser.</div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(157,124,244,.1);color:#9d7cf4;">server.py → JSON response</span>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="background:rgba(100,200,100,.15);color:#64c864;">6</div>
+    <div class="step-body">
+      <div class="step-title" style="color:#64c864;">app.js renders the results</div>
+      <div class="step-desc"><code>renderSearchResults()</code> calls <code>buildTable(results)</code> which generates HTML rows for each paper. <code>buildPagination()</code> adds page buttons. The metric cards show "41 papers found · 4ms". All of this is injected into the empty <code>&lt;div id="panel-search"&gt;</code> that was defined in <code>index.html</code>.</div>
+      <div class="step-files">
+        <span class="file-tag" style="background:rgba(100,200,100,.1);color:#64c864;">app.js → renderSearchResults() → buildTable()</span>
+        <span class="file-tag" style="background:rgba(77,158,255,.1);color:#4d9eff;">index.html → #panel-search (filled)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONNECTION TABLE ══ -->
+<div class="slabel">Every connection — from file to file</div>
+<table class="flow-table">
+  <thead>
+    <tr><th>From</th><th>To</th><th>How</th><th>What passes through</th></tr>
+  </thead>
+  <tbody>
+    <tr class="group-row"><td colspan="4">One-time setup connections</td></tr>
+    <tr>
+      <td>arXiv JSON file</td>
+      <td>research_ingestion.py</td>
+      <td>open() + json.loads()</td>
+      <td>1.49M raw paper records, one per line</td>
+    </tr>
+    <tr>
+      <td>research_ingestion.py</td>
+      <td>research_catalogue.db</td>
+      <td>sqlite3 INSERT OR IGNORE</td>
+      <td>~2.5M cleaned records into publications table</td>
+    </tr>
+    <tr>
+      <td>add_fts.py</td>
+      <td>research_catalogue.db</td>
+      <td>CREATE VIRTUAL TABLE + INSERT</td>
+      <td>FTS5 inverted index over title, authors, abstract, categories</td>
+    </tr>
+    <tr>
+      <td>build_summary.py</td>
+      <td>research_catalogue.db</td>
+      <td>CREATE TABLE AS SELECT</td>
+      <td>Pre-computed year counts, category counts, year×category cross table</td>
+    </tr>
+    <tr>
+      <td>build_orcid_cache.py</td>
+      <td>ORCID public API</td>
+      <td>urllib.request (HTTP)</td>
+      <td>Author name → ORCID ID + profile URL</td>
+    </tr>
+    <tr>
+      <td>build_orcid_cache.py</td>
+      <td>research_catalogue.db</td>
+      <td>sqlite3 INSERT OR REPLACE</td>
+      <td>orcid_cache table: author_name, orcid_id, status</td>
+    </tr>
+
+    <tr class="group-row"><td colspan="4">Every-session connections (browser request cycle)</td></tr>
+    <tr>
+      <td>Browser</td>
+      <td>server.py</td>
+      <td>HTTP GET /</td>
+      <td>Requests the home page</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>Browser</td>
+      <td>HTTP 200 + HTML</td>
+      <td>Sends index.html content with no-cache headers</td>
+    </tr>
+    <tr>
+      <td>index.html</td>
+      <td>server.py</td>
+      <td>&lt;script src="app.js"&gt;</td>
+      <td>Browser automatically requests GET /app.js</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>Browser</td>
+      <td>FileResponse app.js</td>
+      <td>Sends app.js with no-cache headers</td>
+    </tr>
+
+    <tr class="group-row"><td colspan="4">Search request cycle</td></tr>
+    <tr>
+      <td>app.js</td>
+      <td>server.py</td>
+      <td>fetch('/api/search?q=...')</td>
+      <td>Query string, year range, sort, page, page size</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>research_catalogue.db</td>
+      <td>FTS5 MATCH query via sqlite3</td>
+      <td>Phrase-matched rows from publications_fts → joined to publications</td>
+    </tr>
+    <tr>
+      <td>research_catalogue.db</td>
+      <td>server.py</td>
+      <td>fetchall() → list of Row objects</td>
+      <td>Matching paper records with doi, title, authors, year, categories, arxiv_id</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>app.js</td>
+      <td>JSON response</td>
+      <td>results[], total_count, page, total_pages, elapsed_ms, engine</td>
+    </tr>
+    <tr>
+      <td>app.js</td>
+      <td>index.html #panel-search</td>
+      <td>innerHTML =</td>
+      <td>HTML table + pagination buttons + metric cards injected into empty div</td>
+    </tr>
+
+    <tr class="group-row"><td colspan="4">Analytics request cycle (fast path)</td></tr>
+    <tr>
+      <td>app.js</td>
+      <td>server.py</td>
+      <td>fetch('/api/analytics')</td>
+      <td>Year range filter</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>research_catalogue.db</td>
+      <td>SELECT from summary_by_year + summary_by_category</td>
+      <td>Pre-computed counts — microseconds, not minutes</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>_cache dict (memory)</td>
+      <td>Python dict store</td>
+      <td>Result cached in RAM — subsequent calls return instantly</td>
+    </tr>
+
+    <tr class="group-row"><td colspan="4">Researcher profile cycle</td></tr>
+    <tr>
+      <td>app.js</td>
+      <td>server.py</td>
+      <td>fetch('/api/author_match?name=surjeet')</td>
+      <td>Partial name for disambiguation</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>research_catalogue.db</td>
+      <td>FTS5 MATCH 'authors:"surjeet"*'</td>
+      <td>All author strings containing the name — parsed into distinct names</td>
+    </tr>
+    <tr>
+      <td>app.js</td>
+      <td>server.py (parallel)</td>
+      <td>Promise.all([fetch('/api/researcher'), fetch('/api/orcid_lookup')])</td>
+      <td>Papers + ORCID fetched simultaneously</td>
+    </tr>
+    <tr>
+      <td>server.py</td>
+      <td>research_catalogue.db</td>
+      <td>SELECT from orcid_cache</td>
+      <td>Cached ORCID ID (instant) — falls back to live ORCID API if not cached</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>
