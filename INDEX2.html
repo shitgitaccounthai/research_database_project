@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NEXUS · Research Discovery Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Lora:ital,wght@1,300;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Variables ───────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#030609;--deep:#06090f;--card:#090e1a;--elevated:#0c1220;--hover:#101828;
+  --b0:rgba(80,150,255,.06);--b1:rgba(80,150,255,.13);--b2:rgba(80,150,255,.28);--b3:rgba(80,150,255,.5);
+  --cyan:#00e0bc;--blue:#4d9eff;--violet:#9d7cf4;--gold:#f0c040;--rose:#ff6080;
+  --t1:#d8e4f4;--t2:#6a85a8;--t3:#2e4060;--t4:#162030;
+  --radius:8px;--radius-lg:12px;--sidebar:272px;
+  --font-display:'Syne',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-serif:'Lora',serif;
+}
+html{font-size:15px;}
+body{background:var(--void);color:var(--t1);font-family:var(--font-mono);
+     display:flex;height:100vh;overflow:hidden;}
+::selection{background:rgba(0,224,188,.2);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+::-webkit-scrollbar-thumb:hover{background:var(--b3);}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar);min-width:var(--sidebar);height:100vh;
+  background:linear-gradient(180deg,#050a14 0%,#030609 100%);
+  border-right:1px solid var(--b0);display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;flex-shrink:0;
+}
+#main{flex:1;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+#topbar{
+  padding:1.1rem 2rem;border-bottom:1px solid var(--b0);
+  display:flex;align-items:center;gap:1rem;flex-shrink:0;
+  background:linear-gradient(180deg,#060b16,transparent);
+}
+#content{flex:1;overflow-y:auto;padding:1.6rem 2rem 3rem;}
+
+/* ── Sidebar Brand ───────────────────────────────────────────────────────── */
+.sb-brand{
+  padding:1.4rem 1.3rem 1.1rem;
+  border-bottom:1px solid var(--b0);
+}
+.sb-brand-row{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.sb-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan);
+  animation:dot-pulse 2.4s ease-in-out infinite;
+}
+@keyframes dot-pulse{0%,100%{opacity:1;box-shadow:0 0 10px var(--cyan);}
+  50%{opacity:.4;box-shadow:0 0 4px var(--cyan);}}
+.sb-name{font-family:var(--font-display);font-weight:800;font-size:1rem;
+         letter-spacing:.04em;color:var(--t1);}
+.sb-tag{font-size:.58rem;letter-spacing:.16em;color:var(--t3);margin-top:1px;}
+.sb-total{font-size:.62rem;letter-spacing:.1em;color:var(--t3);margin-top:2px;}
+
+/* ── Sidebar sections ────────────────────────────────────────────────────── */
+.sb-section{padding:.9rem 1.3rem .4rem;}
+.sb-label{
+  font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:.55rem;display:block;
+}
+.sb-sep{margin:.5rem 1.3rem;border:none;border-top:1px solid var(--b0);}
+
+/* ── Mode tabs ───────────────────────────────────────────────────────────── */
+.mode-tabs{padding:.5rem 1rem;display:flex;flex-direction:column;gap:3px;}
+.mode-btn{
+  display:flex;align-items:center;gap:9px;padding:.55rem .8rem;
+  border-radius:var(--radius);border:none;background:transparent;
+  color:var(--t2);font-family:var(--font-mono);font-size:.76rem;
+  cursor:pointer;transition:all .18s;text-align:left;width:100%;
+}
+.mode-btn:hover{background:var(--b0);color:var(--t1);}
+.mode-btn.active{background:rgba(0,224,188,.08);color:var(--cyan);
+                 border:1px solid rgba(0,224,188,.2);}
+.mode-icon{font-size:.9rem;width:18px;text-align:center;}
+
+/* ── Filter controls ─────────────────────────────────────────────────────── */
+.filter-group{padding:0 1.3rem .8rem;}
+
+input[type=text],input[type=number],select{
+  width:100%;background:var(--card);border:1px solid var(--b1);
+  border-radius:var(--radius);color:var(--t1);font-family:var(--font-mono);
+  font-size:.8rem;padding:.55rem .75rem;outline:none;
+  transition:border-color .18s,box-shadow .18s;
+  -webkit-appearance:none;appearance:none;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus{
+  border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,224,188,.1);}
+input::placeholder{color:var(--t3);}
+select option{background:#0a1020;}
+
+/* Date range row */
+.date-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.date-row label{font-size:.56rem;letter-spacing:.12em;color:var(--t3);
+                display:block;margin-bottom:3px;text-transform:uppercase;}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+/* Month picker */
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;}
+.month-btn{
+  background:var(--card);border:1px solid var(--b0);border-radius:5px;
+  color:var(--t3);font-family:var(--font-mono);font-size:.65rem;
+  padding:.3rem .2rem;cursor:pointer;transition:all .15s;text-align:center;
+}
+.month-btn:hover{border-color:var(--b2);color:var(--t1);}
+.month-btn.active{background:rgba(0,224,188,.1);border-color:rgba(0,224,188,.35);color:var(--cyan);}
+.month-btn.range{background:rgba(77,158,255,.08);border-color:rgba(77,158,255,.2);color:var(--blue);}
+
+/* Live counter */
+.live-stat{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.45rem 0;border-bottom:1px solid var(--b0);
+}
+.live-stat:last-child{border-bottom:none;}
+.live-stat-label{font-size:.68rem;color:var(--t3);}
+.live-stat-val{font-family:var(--font-display);font-weight:700;font-size:.88rem;color:var(--blue);}
+
+/* Category chips in sidebar */
+.cat-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:.4rem;}
+.cat-chip{
+  padding:.25rem .55rem;border-radius:4px;font-size:.64rem;cursor:pointer;
+  border:1px solid var(--b0);background:var(--card);color:var(--t2);
+  transition:all .15s;
+}
+.cat-chip:hover{border-color:var(--b2);color:var(--t1);}
+.cat-chip.active{background:rgba(77,158,255,.12);border-color:rgba(77,158,255,.3);color:var(--blue);}
+
+/* Sort select wrapper */
+.select-wrap{position:relative;}
+.select-wrap::after{
+  content:'▾';position:absolute;right:.7rem;top:50%;transform:translateY(-50%);
+  color:var(--t3);pointer-events:none;font-size:.7rem;
+}
+
+/* ── Topbar ──────────────────────────────────────────────────────────────── */
+#topbar-title{
+  font-family:var(--font-display);font-weight:800;font-size:1.25rem;
+  letter-spacing:-.01em;color:var(--t1);
+}
+#topbar-title span{
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+#topbar-sub{font-size:.66rem;letter-spacing:.06em;color:var(--t3);
+            font-family:var(--font-mono);margin-top:1px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:.6rem;}
+#search-box-wrap{position:relative;width:380px;}
+#search-box{
+  width:100%;background:var(--card);border:1px solid var(--b1);
+  border-radius:var(--radius);color:var(--t1);font-family:var(--font-mono);
+  font-size:.85rem;padding:.6rem 2.6rem .6rem .85rem;outline:none;
+  transition:border-color .18s,box-shadow .18s;
+}
+#search-box:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,224,188,.1);}
+#search-box::placeholder{color:var(--t3);}
+.search-icon{
+  position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+  color:var(--t3);font-size:.85rem;pointer-events:none;
+}
+#field-sel{
+  background:var(--elevated);border:1px solid var(--b1);border-radius:var(--radius);
+  color:var(--t2);font-family:var(--font-mono);font-size:.72rem;
+  padding:.5rem .7rem;outline:none;cursor:pointer;
+}
+
+/* ── Metrics strip ───────────────────────────────────────────────────────── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin-bottom:1.3rem;}
+.metric-card{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:.9rem 1.1rem;
+}
+.metric-label{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;}
+.metric-val{font-family:var(--font-display);font-weight:700;font-size:1.7rem;color:var(--cyan);}
+.metric-val.blue{color:var(--blue);}
+.metric-val.gold{color:var(--gold);}
+.metric-val.violet{color:var(--violet);}
+
+/* ── Trend bar chart ─────────────────────────────────────────────────────── */
+.trend-card{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:1rem 1.2rem 1.3rem;margin-bottom:1.2rem;
+}
+.trend-title{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;
+             color:var(--t3);margin-bottom:.9rem;}
+.bar-wrap{display:flex;align-items:flex-end;gap:3px;height:64px;overflow:hidden;}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;}
+.bar-count{font-size:6px;color:var(--t3);white-space:nowrap;}
+.bar-rect{width:100%;max-width:28px;border-radius:3px 3px 0 0;
+          background:linear-gradient(180deg,var(--blue),var(--cyan));opacity:.85;
+          transition:opacity .2s;}
+.bar-rect:hover{opacity:1;}
+.bar-yr{font-size:6px;color:var(--t3);transform:rotate(-45deg);
+        white-space:nowrap;margin-top:2px;}
+
+/* ── Results table ───────────────────────────────────────────────────────── */
+.section-label{
+  font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);
+  margin-bottom:.6rem;display:flex;align-items:center;gap:7px;
+}
+.section-label::before{content:'';display:inline-block;width:12px;height:1px;background:var(--t3);}
+.results-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.results-table th{
+  font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);
+  padding:.6rem .8rem;text-align:left;border-bottom:1px solid var(--b0);
+  white-space:nowrap;background:var(--elevated);position:sticky;top:0;
+}
+.results-table th:first-child{border-radius:var(--radius) 0 0 0;}
+.results-table th:last-child{border-radius:0 var(--radius) 0 0;}
+.results-table td{
+  padding:.7rem .8rem;border-bottom:1px solid var(--b0);
+  color:var(--t1);vertical-align:top;
+}
+.results-table tr:hover td{background:var(--hover);}
+.td-title{max-width:340px;font-size:.8rem;line-height:1.45;color:var(--t1);}
+.td-authors{max-width:180px;font-size:.72rem;color:var(--t2);
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.td-year{color:var(--t2);white-space:nowrap;font-size:.75rem;}
+.td-cat{font-size:.68rem;color:var(--t3);max-width:110px;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.td-links{white-space:nowrap;display:flex;gap:5px;}
+.link-btn{
+  padding:.22rem .55rem;border-radius:4px;font-size:.65rem;
+  border:1px solid var(--b1);color:var(--blue);background:transparent;
+  cursor:pointer;text-decoration:none;transition:all .15s;font-family:var(--font-mono);
+  display:inline-block;
+}
+.link-btn:hover{border-color:var(--blue);background:rgba(77,158,255,.1);}
+.link-btn:disabled{opacity:.3;cursor:default;}
+.link-btn{cursor:pointer;}
+.table-wrap{background:var(--card);border:1px solid var(--b0);
+            border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto;}
+.no-results{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:3rem 2rem;text-align:center;
+}
+.no-results-title{font-family:var(--font-display);font-weight:600;font-size:1rem;
+                  color:var(--t2);margin-bottom:.3rem;}
+.no-results-sub{font-size:.72rem;color:var(--t3);}
+
+/* ── Researcher profile ──────────────────────────────────────────────────── */
+.profile-card{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:1.5rem 1.8rem;margin-bottom:1.2rem;
+  display:flex;align-items:flex-start;gap:1.6rem;flex-wrap:wrap;
+}
+.profile-avatar{
+  width:56px;height:56px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(77,158,255,.15),rgba(0,224,188,.15));
+  border:1.5px solid rgba(0,224,188,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:800;font-size:1.15rem;color:var(--cyan);
+}
+.profile-info{flex:1;min-width:160px;}
+.profile-name{font-family:var(--font-display);font-weight:700;font-size:1.25rem;
+              color:var(--t1);margin-bottom:3px;}
+.profile-meta{font-size:.68rem;color:var(--t3);letter-spacing:.04em;}
+.profile-meta span{color:var(--blue);}
+.profile-stats{display:flex;gap:1.3rem;flex-shrink:0;flex-wrap:wrap;}
+.pstat{text-align:center;}
+.pstat-val{font-family:var(--font-display);font-weight:700;font-size:1.6rem;line-height:1;}
+.pstat-lbl{font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-top:2px;}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--b0);margin-bottom:1.3rem;gap:0;}
+.tab-btn{
+  padding:.6rem 1.1rem;background:transparent;border:none;
+  color:var(--t3);font-family:var(--font-mono);font-size:.68rem;
+  letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .18s;
+}
+.tab-btn:hover{color:var(--t1);}
+.tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* Year pills */
+.year-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:1rem;}
+.year-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(77,158,255,.07);border:1px solid rgba(77,158,255,.16);
+  border-radius:5px;padding:3px 8px;font-size:.66rem;
+}
+.year-pill-yr{color:var(--t3);}
+.year-pill-cnt{color:var(--blue);font-weight:500;}
+
+/* Horiz bars */
+.hbar-row{margin-bottom:9px;}
+.hbar-top{display:flex;justify-content:space-between;margin-bottom:4px;}
+.hbar-label{font-size:.72rem;color:var(--t1);}
+.hbar-val{font-size:.68rem;}
+.hbar-track{height:6px;background:rgba(77,158,255,.07);border-radius:3px;overflow:hidden;}
+.hbar-fill{height:100%;border-radius:3px;opacity:.82;}
+
+/* Category browse cards */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;margin-top:.8rem;}
+.cat-card{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:.9rem 1.1rem;border-left:3px solid var(--cyan);
+  cursor:pointer;transition:all .18s;
+}
+.cat-card:hover{background:var(--elevated);border-color:var(--b2);}
+.cat-code{font-size:.66rem;letter-spacing:.08em;margin-bottom:3px;}
+.cat-name{font-family:var(--font-display);font-weight:600;font-size:.88rem;color:var(--t1);margin-bottom:5px;}
+.cat-count{font-size:.7rem;color:var(--t3);}
+
+/* Analytics grid */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.2rem;}
+.analytics-card{background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);padding:1.2rem 1.4rem;}
+.analytics-card-title{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:1rem;}
+
+/* Welcome screen */
+.welcome{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--b0);border:1px solid var(--b0);
+  border-radius:var(--radius-lg);overflow:hidden;margin-top:1.5rem;
+}
+.welcome-cell{background:var(--deep);padding:1.8rem 1.6rem;}
+.wc-eyebrow{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;
+            margin-bottom:.65rem;}
+.wc-val{font-family:var(--font-display);font-weight:700;font-size:1.5rem;
+        color:var(--t1);margin-bottom:.4rem;line-height:1.1;}
+.wc-desc{font-family:var(--font-serif);font-style:italic;font-size:.88rem;
+         color:var(--t3);line-height:1.5;}
+
+/* Loading spinner */
+.spinner{
+  display:inline-block;width:14px;height:14px;
+  border:2px solid var(--b1);border-top-color:var(--cyan);
+  border-radius:50%;animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Error box */
+.error-box{background:rgba(255,96,128,.08);border:1px solid rgba(255,96,128,.25);
+           border-radius:var(--radius);padding:.9rem 1.1rem;color:#ff9aaa;font-size:.78rem;}
+
+/* Footer bar */
+#footer{flex-shrink:0;border-top:1px solid var(--b0);
+        padding:.55rem 1.3rem;font-size:.62rem;color:var(--t3);
+        display:flex;justify-content:space-between;align-items:center;
+        background:var(--deep);}
+
+/* Fade-in animation */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.fade-in{animation:fadeUp .28s ease forwards;}
+
+/* Caption */
+.caption{font-size:.64rem;color:var(--t3);margin-top:.6rem;letter-spacing:.05em;}
+
+/* ── Network / Author page ───────────────────────────────────────────────── */
+.network-layout{display:grid;grid-template-columns:300px 1fr;gap:1rem;height:calc(100vh - 130px);}
+.author-list-panel{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.alp-header{padding:.8rem 1rem;border-bottom:1px solid var(--b0);flex-shrink:0;}
+.alp-search{
+  width:100%;background:var(--elevated);border:1px solid var(--b1);
+  border-radius:var(--radius);color:var(--t1);font-family:var(--font-mono);
+  font-size:.75rem;padding:.45rem .7rem;outline:none;margin-bottom:.5rem;
+  transition:border-color .18s;
+}
+.alp-search:focus{border-color:var(--cyan);}
+.alp-search::placeholder{color:var(--t3);}
+.alp-meta{font-size:.6rem;color:var(--t3);letter-spacing:.08em;}
+.alp-list{flex:1;overflow-y:auto;padding:.3rem 0;}
+.author-row{
+  display:flex;align-items:center;gap:.6rem;padding:.42rem 1rem;
+  cursor:pointer;transition:background .14s;border-bottom:1px solid var(--b0);
+}
+.author-row:hover{background:var(--elevated);}
+.author-row.selected{background:rgba(0,224,188,.07);border-left:2px solid var(--cyan);}
+.ar-rank{font-size:.6rem;color:var(--t3);width:22px;text-align:right;flex-shrink:0;}
+.ar-name{flex:1;font-size:.76rem;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ar-count{font-size:.68rem;color:var(--blue);flex-shrink:0;}
+.ar-badge{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:var(--cyan);opacity:.6;
+}
+
+/* Graph panel */
+.graph-panel{
+  background:var(--card);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+.graph-toolbar{
+  padding:.65rem 1rem;border-bottom:1px solid var(--b0);
+  display:flex;align-items:center;gap:.7rem;flex-shrink:0;flex-wrap:wrap;
+}
+.graph-label{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);}
+.graph-input{
+  background:var(--elevated);border:1px solid var(--b1);border-radius:var(--radius);
+  color:var(--t1);font-family:var(--font-mono);font-size:.75rem;
+  padding:.38rem .65rem;outline:none;transition:border-color .18s;
+}
+.graph-input:focus{border-color:var(--cyan);}
+.graph-btn{
+  background:rgba(0,224,188,.1);border:1px solid rgba(0,224,188,.28);
+  border-radius:var(--radius);color:var(--cyan);font-family:var(--font-mono);
+  font-size:.72rem;padding:.38rem .8rem;cursor:pointer;transition:all .16s;
+  white-space:nowrap;
+}
+.graph-btn:hover{background:rgba(0,224,188,.18);}
+.graph-btn.secondary{
+  background:transparent;border-color:var(--b1);color:var(--t2);
+}
+.graph-btn.secondary:hover{border-color:var(--b2);color:var(--t1);}
+#graph-svg{flex:1;width:100%;cursor:grab;}
+#graph-svg:active{cursor:grabbing;}
+
+/* Tooltip */
+#net-tooltip{
+  position:fixed;background:var(--elevated);border:1px solid var(--b2);
+  border-radius:var(--radius);padding:.6rem .9rem;font-family:var(--font-mono);
+  font-size:.72rem;color:var(--t1);pointer-events:none;z-index:1000;
+  opacity:0;transition:opacity .15s;max-width:220px;line-height:1.5;
+}
+
+/* Graph legend */
+.graph-legend{
+  position:absolute;bottom:.8rem;right:.9rem;
+  background:rgba(6,9,15,.85);border:1px solid var(--b0);
+  border-radius:var(--radius);padding:.6rem .8rem;
+  display:flex;flex-direction:column;gap:.3rem;
+}
+.legend-item{display:flex;align-items:center;gap:.5rem;font-size:.62rem;color:var(--t2);}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.graph-empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--t3);gap:.6rem;padding:2rem;text-align:center;
+}
+.graph-empty-icon{font-size:2.5rem;opacity:.3;}
+.graph-empty-title{font-family:var(--font-display);font-weight:600;font-size:.95rem;color:var(--t2);}
+.graph-empty-sub{font-size:.72rem;line-height:1.5;}
+
+/* Network stats bar */
+.net-stats{
+  padding:.5rem 1rem;border-top:1px solid var(--b0);
+  display:flex;gap:1.2rem;flex-shrink:0;flex-wrap:wrap;
+}
+.net-stat{font-size:.62rem;color:var(--t3);}
+.net-stat span{color:var(--t1);font-family:var(--font-display);font-weight:600;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ SIDEBAR ══════════════ -->
+<aside id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-brand-row">
+      <div class="sb-dot"></div>
+      <span class="sb-name">NEXUS</span>
+      <span class="sb-tag">RESEARCH</span>
+    </div>
+    <div class="sb-total" id="sb-total">Loading corpus…</div>
+  </div>
+
+  <!-- Mode -->
+  <div class="mode-tabs" style="padding-top:.8rem;">
+    <button class="mode-btn active" data-mode="search" onclick="setMode('search',this)">
+      <span class="mode-icon">🔍</span> Full Search
+    </button>
+    <button class="mode-btn" data-mode="researcher" onclick="setMode('researcher',this)">
+      <span class="mode-icon">👤</span> Researcher Profile
+    </button>
+    <button class="mode-btn" data-mode="category" onclick="setMode('category',this)">
+      <span class="mode-icon">📂</span> By Category
+    </button>
+    <button class="mode-btn" data-mode="analytics" onclick="setMode('analytics',this)">
+      <span class="mode-icon">📊</span> Analytics
+    </button>
+    <button class="mode-btn" data-mode="network" onclick="setMode('network',this)">
+      <span class="mode-icon">🕸</span> Author Network
+    </button>
+  </div>
+
+  <hr class="sb-sep"/>
+
+  <!-- ── DATE RANGE FILTER ─────────────────────────────────────────── -->
+  <div class="sb-section">
+    <span class="sb-label">Publication Period</span>
+    <div class="date-row">
+      <div>
+        <label>From Year</label>
+        <input type="number" id="yr-from" min="1900" max="2026"
+               onkeydown="if(event.key==='Enter')applyYearFilter()"
+               style="text-align:center;"/>
+      </div>
+      <div>
+        <label>To Year</label>
+        <input type="number" id="yr-to" min="1900" max="2026"
+               onkeydown="if(event.key==='Enter')applyYearFilter()"
+               style="text-align:center;"/>
+      </div>
+    </div>
+    <button onclick="applyYearFilter()" style="
+      width:100%;margin-top:6px;padding:6px;
+      background:rgba(0,224,188,.12);border:1px solid rgba(0,224,188,.35);
+      border-radius:6px;color:#00ddb8;font-family:var(--font-mono);
+      font-size:.72rem;cursor:pointer;letter-spacing:.06em;
+    ">Apply Year Range</button>
+
+    <!-- Exact year / month picker -->
+    <div style="margin-top:1rem;padding-top:.8rem;border-top:1px solid rgba(82,160,255,.08);">
+      <span class="sb-label" style="display:block;margin-bottom:.4rem;">Exact Year (optional)</span>
+      <input type="number" id="exact-yr" min="1900" max="2026"
+             placeholder="e.g. 2019"
+             onkeydown="if(event.key==='Enter')applyYearFilter()"
+             style="width:100%;text-align:center;"/>
+
+      <span class="sb-label" style="display:block;margin:.6rem 0 .4rem;">Exact Month (optional)</span>
+      <div class="select-wrap">
+        <select id="exact-mo" style="width:100%;">
+          <option value="0">Any month</option>
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+      </div>
+      <button onclick="applyYearFilter()" style="
+        width:100%;margin-top:6px;padding:6px;
+        background:rgba(77,158,255,.12);border:1px solid rgba(77,158,255,.35);
+        border-radius:6px;color:#4d9eff;font-family:var(--font-mono);
+        font-size:.72rem;cursor:pointer;letter-spacing:.06em;
+      ">Apply Exact Filter</button>
+      <button onclick="clearExactFilter()" style="
+        width:100%;margin-top:4px;padding:5px;
+        background:transparent;border:1px solid rgba(82,160,255,.12);
+        border-radius:6px;color:#2e4060;font-family:var(--font-mono);
+        font-size:.68rem;cursor:pointer;
+      ">Clear Exact Filter</button>
+    </div>
+
+    <!-- Month range -->
+    <span class="sb-label" style="margin-top:.7rem;display:block;">Month Range</span>
+    <div class="date-row">
+      <div>
+        <label>From Month</label>
+        <div class="select-wrap">
+          <select id="mo-from" onchange="onFilterChange()">
+            <option value="1">Jan</option><option value="2">Feb</option>
+            <option value="3">Mar</option><option value="4">Apr</option>
+            <option value="5">May</option><option value="6">Jun</option>
+            <option value="7">Jul</option><option value="8">Aug</option>
+            <option value="9">Sep</option><option value="10">Oct</option>
+            <option value="11">Nov</option><option value="12">Dec</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>To Month</label>
+        <div class="select-wrap">
+          <select id="mo-to" onchange="onFilterChange()">
+            <option value="1">Jan</option><option value="2">Feb</option>
+            <option value="3">Mar</option><option value="4">Apr</option>
+            <option value="5">May</option><option value="6">Jun</option>
+            <option value="7">Jul</option><option value="8">Aug</option>
+            <option value="9">Sep</option><option value="10">Oct</option>
+            <option value="11" selected>Nov</option><option value="12">Dec</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visual month grid -->
+    <div class="month-grid" id="month-grid"></div>
+  </div>
+
+  <hr class="sb-sep"/>
+
+  <!-- Page size selector -->
+  <div class="filter-group">
+    <span class="sb-label">Results Per Page</span>
+    <div class="select-wrap">
+      <select id="page-size-sel" onchange="onPageSizeChange()">
+        <option value="25">25 per page</option>
+        <option value="50" selected>50 per page</option>
+        <option value="100">100 per page</option>
+        <option value="200">200 per page</option>
+        <option value="500">500 per page</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Sort -->
+  <div class="filter-group">
+    <span class="sb-label">Sort By</span>
+    <div class="select-wrap">
+      <select id="sort-sel" onchange="onFilterChange()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="title_az">Title A → Z</option>
+        <option value="title_za">Title Z → A</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Category quick chips -->
+  <div class="filter-group">
+    <span class="sb-label">Quick Category</span>
+    <div class="cat-chips" id="cat-chips">
+      <span class="cat-chip" onclick="toggleCat(this,'cs.LG')">cs.LG</span>
+      <span class="cat-chip" onclick="toggleCat(this,'cs.AI')">cs.AI</span>
+      <span class="cat-chip" onclick="toggleCat(this,'cs.CV')">cs.CV</span>
+      <span class="cat-chip" onclick="toggleCat(this,'stat.ML')">stat.ML</span>
+      <span class="cat-chip" onclick="toggleCat(this,'astro-ph')">astro-ph</span>
+      <span class="cat-chip" onclick="toggleCat(this,'quant-ph')">quant-ph</span>
+      <span class="cat-chip" onclick="toggleCat(this,'hep-th')">hep-th</span>
+      <span class="cat-chip" onclick="toggleCat(this,'cs.CL')">cs.CL</span>
+    </div>
+  </div>
+
+  <hr class="sb-sep"/>
+
+  <!-- Live stats -->
+  <div class="sb-section" style="padding-top:.3rem;">
+    <span class="sb-label">Live Count</span>
+    <div class="live-stat">
+      <span class="live-stat-label">In period</span>
+      <span class="live-stat-val" id="live-count">—</span>
+    </div>
+    <div class="live-stat">
+      <span class="live-stat-label">Period</span>
+      <span class="live-stat-val" id="live-range" style="font-size:.76rem;color:var(--t1);">—</span>
+    </div>
+  </div>
+
+  <div id="footer" style="border-top:1px solid var(--b0);margin-top:auto;">
+    <span>NEXUS v3.0</span><span id="db-status">●</span>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════ MAIN ════════════════ -->
+<div id="main">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div>
+      <div id="topbar-title">Research Discovery <span>Engine</span></div>
+      <div id="topbar-sub">IISER Pune · To Future · <span id="corpus-count">…</span> papers</div>
+    </div>
+    <div class="topbar-right">
+      <div id="search-box-wrap">
+        <input id="search-box" type="text"
+               placeholder="Search papers, authors, topics, DOIs…"
+               onkeydown="if(event.key==='Enter')doSearch()"/>
+        <span class="search-icon">⌕</span>
+      </div>
+      <select id="field-sel" onchange="doSearch()">
+        <option value="all">All Fields</option>
+        <option value="title">Title</option>
+        <option value="author">Author</option>
+        <option value="doi">DOI</option>
+        <option value="category">Category</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div id="content">
+    <div id="panel-search" class="panel active"></div>
+    <div id="panel-researcher" class="panel" style="display:none;"></div>
+    <div id="panel-category" class="panel" style="display:none;"></div>
+    <div id="panel-analytics" class="panel" style="display:none;"></div>
+    <div id="panel-network" class="panel" style="display:none;"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
